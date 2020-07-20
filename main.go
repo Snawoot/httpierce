@@ -3,9 +3,10 @@ package main
 import (
     "flag"
     "log"
-    //"net"
+    "net"
     "time"
     "os"
+    "context"
 )
 
 type CLIArgs struct {
@@ -34,9 +35,7 @@ func main() {
     args := NewCLIArgs()
 
     pluginArgs, err := NewPluginArgs()
-    if err != nil {
-        log.Printf("main: plugin interface error: %v", err)
-    } else {
+    if err == nil {
         log.Print("main: running in plugin mode")
 
         opts := pluginArgs.ExportOptions()
@@ -55,7 +54,7 @@ func main() {
     }
     err = args.Update(os.Args[1:])
     if err != nil {
-        log.Fatalf("main: commandLine.Parse: %v", err)
+        log.Fatalf("main: args.Update: %v", err)
     }
 
     if args.Bind == "" {
@@ -65,29 +64,37 @@ func main() {
         log.Fatal("main: destination addr is required")
     }
 
-    /*if args.server {
-        lc := net.ListenConfig{Control: core.GetControlFunc(&core.TcpConfig{EnableTFO: tfo})}
-        l, err := lc.Listen(context.Background(), "tcp", args.bind)
+    log.Printf("args=%#v", args)
+
+    if args.Server {
+        lc := net.ListenConfig{}
+        l, err := lc.Listen(context.Background(), "tcp", args.Bind)
         if err != nil {
             log.Fatalf("main: net.Listen: %v", err)
         }
 
-        err = core.DoServer(l, certificates, args.dst, sendPaddingData, timeout)
+        err = DoServer(l, args.Dst, args.Timeout)
         if err != nil {
             log.Fatalf("main: doServer: %v", err)
         }
 
-    } else { // do client
+    } else {
         lc := net.ListenConfig{}
-        l, err := lc.Listen(context.Background(), "tcp", args.bind)
+        l, err := lc.Listen(context.Background(), "tcp", args.Bind)
         if err != nil {
             log.Fatalf("main: net.Listen: %v", err)
         }
 
-        err = core.DoClient(l, args.dst, host, rootCAs, insecureSkipVerify, sendPaddingData, timeout, vpn, tfo)
+        err = DoClient(l, args.Dst, args.Timeout, args.VPN)
         if err != nil {
             log.Fatalf("main: doServer: %v", err)
         }
     }
-    */
+}
+
+func DoServer(x ...interface{}) error {
+    return nil
+}
+func DoClient(x ...interface{}) error {
+    return nil
 }
