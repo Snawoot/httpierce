@@ -1,10 +1,10 @@
 package main
 
 import (
-	"fmt"
-	"log"
-	"net"
-	"time"
+    "fmt"
+    "log"
+    "net"
+    "time"
     "context"
     "sync"
     "github.com/google/uuid"
@@ -13,22 +13,22 @@ import (
 )
 
 func DoClient(l net.Listener, serverAddr string, timeout time.Duration, vpnMode bool) error {
-	dialer := net.Dialer{
-		Timeout: timeout,
-		Control: GetControlFunc(&TcpConfig{AndroidVPN: vpnMode}),
-	}
+    dialer := net.Dialer{
+        Timeout: timeout,
+        Control: GetControlFunc(&TcpConfig{AndroidVPN: vpnMode}),
+    }
 
-	for {
-		localConn, err := l.Accept()
-		if err != nil {
-			return fmt.Errorf("l.Accept(): %w", err)
-		}
+    for {
+        localConn, err := l.Accept()
+        if err != nil {
+            return fmt.Errorf("l.Accept(): %w", err)
+        }
 
-		go func() {
-			defer localConn.Close()
+        go func() {
+            defer localConn.Close()
             serveConn(localConn, serverAddr, dialer)
-		}()
-	}
+        }()
+    }
 }
 
 func serveConn(localConn net.Conn, serverAddr string, dialer net.Dialer) {
