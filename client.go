@@ -24,15 +24,14 @@ func DoClient(l net.Listener, serverAddr string, timeout time.Duration, vpnMode 
             return fmt.Errorf("l.Accept(): %w", err)
         }
 
-        go func() {
-            defer localConn.Close()
-            serveConn(localConn, serverAddr, dialer)
-        }()
+        go serveConn(localConn, serverAddr, dialer)
     }
 }
 
 func serveConn(localConn net.Conn, serverAddr string, dialer net.Dialer) {
-    log.Printf("Client %s connected", localConn.RemoteAddr().String())
+    defer localConn.Close()
+    remoteAddr := localConn.RemoteAddr().String()
+    log.Printf("Client %s connected", remoteAddr)
     sess_id := uuid.New()
     ctx, cancel := context.WithCancel(context.Background())
     var wg sync.WaitGroup
@@ -48,7 +47,7 @@ func serveConn(localConn net.Conn, serverAddr string, dialer net.Dialer) {
         cancel()
     }()
     wg.Wait()
-    log.Printf("Client %s disconnected", localConn.RemoteAddr().String())
+    log.Printf("Client %s disconnected", remoteAddr)
 }
 
 func forwardClientUp(ctx context.Context, localConn net.Conn, serverAddr string, dialer net.Dialer, sess_id uuid.UUID) {

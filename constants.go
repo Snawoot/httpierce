@@ -2,6 +2,7 @@ package main
 
 import (
     "time"
+    "github.com/google/uuid"
 )
 
 var (
@@ -13,4 +14,8 @@ var (
     respDownLen = len(respDown)
     respUp = []byte("HTTP/1.1 204 No Content\r\nPragma: no-cache\r\nCache-Control: no-cache, no-store, must-revalidate\r\nExpires: Thu, 01 Jan 1970 00:00:01 GMT\r\n\r\n")
     respUpLen = len(respUp)
+    zeroUUID uuid.UUID
+    verbGetReqLen = len(makeReqBuffer(zeroUUID, false))
+    verbPostReqLen = len(makeReqBuffer(zeroUUID, true))
+    reqURILen = 1 + 16 * 2 + 1
 )
