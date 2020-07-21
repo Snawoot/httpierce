@@ -91,10 +91,3 @@ func main() {
         }
     }
 }
-
-func DoServer(x ...interface{}) error {
-    return nil
-}
-func DoClient(x ...interface{}) error {
-    return nil
-}
