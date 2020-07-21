@@ -38,78 +38,110 @@ func serveConn(localConn net.Conn, serverAddr string, dialer net.Dialer) {
     wg.Add(2)
     go func() {
         defer wg.Done()
-        forwardUp(ctx, localConn, serverAddr, dialer, sess_id)
+        forwardClientUp(ctx, localConn, serverAddr, dialer, sess_id)
         cancel()
     }()
     go func() {
         defer wg.Done()
-        forwardDown(ctx, localConn, serverAddr, dialer, sess_id)
+        forwardClientDown(ctx, localConn, serverAddr, dialer, sess_id)
         cancel()
     }()
     wg.Wait()
 }
 
-func forwardUp(ctx context.Context, localConn net.Conn, serverAddr string, dialer net.Dialer, sess_id uuid.UUID) {
+func forwardClientUp(ctx context.Context, localConn net.Conn, serverAddr string, dialer net.Dialer, sess_id uuid.UUID) {
     remoteConn, err := dialer.DialContext(ctx, "tcp", serverAddr)
     if err != nil {
-        log.Printf("WARN: forward upstream connection failed: %v", err)
+        select {
+        case <-ctx.Done():
+        default:
+            log.Printf("WARN: forward upstream connection failed: %v", err)
+        }
         return
     }
-    defer remoteConn.Close()
 
-    _, err = remoteConn.Write(makeReqBuffer(sess_id, true))
-    if err != nil {
-        log.Printf("WARN: request write failed: %v", err)
-        return
-    }
-    chunkedWriter := NewChunkedWriter(remoteConn)
-    defer chunkedWriter.Close()
-
-    done := make(chan struct{}, 1)
+    done := make(chan struct{})
     go func() {
+        defer func () {
+            done <- struct{}{}
+        }()
+        _, err = remoteConn.Write(makeReqBuffer(sess_id, true))
+        if err != nil {
+            select {
+            case <-ctx.Done():
+            default:
+                log.Printf("WARN: request write failed: %v", err)
+            }
+            return
+        }
+
+        chunkedWriter := NewChunkedWriter(remoteConn)
+        defer chunkedWriter.Close()
         io.Copy(chunkedWriter, localConn)
-        done <- struct{}{}
     }()
 
     select {
     case <-ctx.Done():
         localConn.SetReadDeadline(epoch)
+        remoteConn.Close()
         <-done
         localConn.SetReadDeadline(zeroTime)
         return
     case <-done:
+        remoteConn.Close()
         return
     }
 }
 
-func forwardDown(ctx context.Context, localConn net.Conn, serverAddr string, dialer net.Dialer, sess_id uuid.UUID) {
+func forwardClientDown(ctx context.Context, localConn net.Conn, serverAddr string, dialer net.Dialer, sess_id uuid.UUID) {
     remoteConn, err := dialer.DialContext(ctx, "tcp", serverAddr)
     if err != nil {
-        log.Printf("WARN: forward downstream connection failed: %v", err)
+        select {
+        case <-ctx.Done():
+        default:
+            log.Printf("WARN: forward downstream connection failed: %v", err)
+        }
         return
     }
-    defer remoteConn.Close()
 
-    _, err = remoteConn.Write(makeReqBuffer(sess_id, false))
-    if err != nil {
-        log.Printf("WARN: request write failed: %v", err)
-        return
-    }
-    chunkedReader := NewChunkedReader(remoteConn)
-
-    done := make(chan struct{}, 1)
+    done := make(chan struct{})
     go func() {
+        defer func () {
+            done <- struct{}{}
+        }()
+        _, err = remoteConn.Write(makeReqBuffer(sess_id, false))
+        if err != nil {
+            select {
+            case <-ctx.Done():
+            default:
+                log.Printf("WARN: request write failed: %v", err)
+            }
+            return
+        }
+
+        err := discardBytes(remoteConn, int64(respDownLen))
+        if err != nil {
+            select {
+            case <-ctx.Done():
+            default:
+                log.Printf("WARN: response read failed: %v", err)
+            }
+            return
+        }
+        chunkedReader := NewChunkedReader(remoteConn)
+
         io.Copy(localConn, chunkedReader)
-        done <- struct{}{}
     }()
 
     select {
     case <-ctx.Done():
-        remoteConn.SetReadDeadline(epoch)
+        remoteConn.Close()
+        localConn.SetWriteDeadline(epoch)
         <-done
-        remoteConn.SetReadDeadline(zeroTime)
+        localConn.SetWriteDeadline(zeroTime)
         return
     case <-done:
+        remoteConn.Close()
         return
     }
 }
