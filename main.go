@@ -64,8 +64,6 @@ func main() {
         log.Fatal("main: destination addr is required")
     }
 
-    log.Printf("args=%#v", args)
-
     if args.Server {
         lc := net.ListenConfig{}
         l, err := lc.Listen(context.Background(), "tcp", args.Bind)

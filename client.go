@@ -32,6 +32,7 @@ func DoClient(l net.Listener, serverAddr string, timeout time.Duration, vpnMode 
 }
 
 func serveConn(localConn net.Conn, serverAddr string, dialer net.Dialer) {
+    log.Printf("Client %s connected", localConn.RemoteAddr().String())
     sess_id := uuid.New()
     ctx, cancel := context.WithCancel(context.Background())
     var wg sync.WaitGroup
@@ -47,6 +48,7 @@ func serveConn(localConn net.Conn, serverAddr string, dialer net.Dialer) {
         cancel()
     }()
     wg.Wait()
+    log.Printf("Client %s disconnected", localConn.RemoteAddr().String())
 }
 
 func forwardClientUp(ctx context.Context, localConn net.Conn, serverAddr string, dialer net.Dialer, sess_id uuid.UUID) {
@@ -147,7 +149,13 @@ func forwardClientDown(ctx context.Context, localConn net.Conn, serverAddr strin
 }
 
 func makeReqBuffer(sess_id uuid.UUID, upload bool) []byte {
-    buf := []byte(fmt.Sprintf("POST #%s# HTTP/1.1\r\n", hex.EncodeToString(sess_id[:])))
+    var method string
+    if upload {
+        method = "POST"
+    } else {
+        method = "GET"
+    }
+    buf := []byte(fmt.Sprintf("%s #%s# HTTP/1.1\r\n", method, hex.EncodeToString(sess_id[:])))
     if upload {
         buf = append(buf, header_chunked...)
     }
