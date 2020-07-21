@@ -1,6 +1,6 @@
 # httpierce
 
-Experimental shadowsocks plugin for passing some mobile ISP captive portal.
+Experimental shadowsocks plugin purposed to bypass captive portals of some mobile ISPs.
 
 Work in progress.
 
