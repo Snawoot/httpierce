@@ -52,8 +52,14 @@ func handleClientConn(remoteConn net.Conn, dispatcher *SharedConnDispatcher) {
 }
 
 func forwardServerUp(remoteConn, localConn net.Conn) {
+    _, err := remoteConn.Write(respCont)
+    if err != nil {
+        log.Printf("Client %s: continuation write error: %v",
+                   remoteConn.RemoteAddr().String(),
+                   err)
+    }
     chunkedReader := NewUnwrappedWire(remoteConn)
-    _, err := io.Copy(localConn, chunkedReader)
+    _, err = io.Copy(localConn, chunkedReader)
     log.Printf("Client %s: upload stopped: %v", remoteConn.RemoteAddr().String(), err)
     _, err = remoteConn.Write(respUp)
     if err != nil {

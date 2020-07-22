@@ -77,6 +77,16 @@ func forwardClientUp(ctx context.Context, localConn net.Conn, serverAddr string,
             return
         }
 
+        err = discardBytes(remoteConn, int64(respContLen))
+        if err != nil {
+            select {
+            case <-ctx.Done():
+            default:
+                log.Printf("WARN: continuation read failed: %v", err)
+            }
+            return
+        }
+
         chunkedWriter := NewWrappedWire(remoteConn)
         defer chunkedWriter.Close()
         io.Copy(chunkedWriter, localConn)
@@ -158,6 +168,7 @@ func makeReqBuffer(sess_id uuid.UUID, upload bool) []byte {
     buf := []byte(fmt.Sprintf("%s #%s# HTTP/1.1\r\n", method, hex.EncodeToString(sess_id[:])))
     if upload {
         buf = append(buf, header_chunked...)
+        buf = append(buf, header_expect...)
     }
     buf = append(buf, trailer...)
     return buf
