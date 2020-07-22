@@ -35,7 +35,7 @@ func handleClientConn(remoteConn net.Conn, dispatcher *SharedConnDispatcher) {
         log.Printf("Bad request from client %s: %v", remoteAddr, err)
         return
     }
-    log.Printf("Client %s: session ID = %s, upload = %s", remoteAddr, sess_id, upload)
+    log.Printf("Client %s: session ID = %s, upload = %t", remoteAddr, sess_id, upload)
 
     localConn, err := dispatcher.ConnectSession(sess_id)
     if err != nil {
