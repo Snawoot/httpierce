@@ -1,15 +1,15 @@
 package main
 
 import (
+    "context"
+    "encoding/hex"
     "fmt"
+    "github.com/google/uuid"
+    "io"
     "log"
     "net"
-    "time"
-    "context"
     "sync"
-    "github.com/google/uuid"
-    "encoding/hex"
-    "io"
+    "time"
 )
 
 func DoClient(l net.Listener, serverAddr string, timeout time.Duration, vpnMode bool) error {
@@ -64,7 +64,7 @@ func forwardClientUp(ctx context.Context, localConn net.Conn, serverAddr string,
 
     done := make(chan struct{})
     go func() {
-        defer func () {
+        defer func() {
             done <- struct{}{}
         }()
         _, err = remoteConn.Write(makeReqBuffer(sess_id, true))
@@ -108,7 +108,7 @@ func forwardClientDown(ctx context.Context, localConn net.Conn, serverAddr strin
 
     done := make(chan struct{})
     go func() {
-        defer func () {
+        defer func() {
             done <- struct{}{}
         }()
         _, err = remoteConn.Write(makeReqBuffer(sess_id, false))
