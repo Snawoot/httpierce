@@ -52,7 +52,7 @@ func handleClientConn(remoteConn net.Conn, dispatcher *SharedConnDispatcher) {
 }
 
 func forwardServerUp(remoteConn, localConn net.Conn) {
-    chunkedReader := NewChunkedReader(remoteConn)
+    chunkedReader := NewUnwrappedWire(remoteConn)
     _, err := io.Copy(localConn, chunkedReader)
     log.Printf("Client %s: upload stopped: %v", remoteConn.RemoteAddr().String(), err)
     _, err = remoteConn.Write(respUp)
@@ -71,7 +71,7 @@ func forwardServerDown(remoteConn, localConn net.Conn) {
                    err)
         return
     }
-    chunkedWriter := NewChunkedWriter(remoteConn)
+    chunkedWriter := NewWrappedWire(remoteConn)
     defer chunkedWriter.Close()
     _, err = io.Copy(chunkedWriter, localConn)
     log.Printf("Client %s: download stopped: %v", remoteConn.RemoteAddr().String(), err)

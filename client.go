@@ -77,7 +77,7 @@ func forwardClientUp(ctx context.Context, localConn net.Conn, serverAddr string,
             return
         }
 
-        chunkedWriter := NewChunkedWriter(remoteConn)
+        chunkedWriter := NewWrappedWire(remoteConn)
         defer chunkedWriter.Close()
         io.Copy(chunkedWriter, localConn)
     }()
@@ -130,7 +130,7 @@ func forwardClientDown(ctx context.Context, localConn net.Conn, serverAddr strin
             }
             return
         }
-        chunkedReader := NewChunkedReader(remoteConn)
+        chunkedReader := NewUnwrappedWire(remoteConn)
 
         io.Copy(localConn, chunkedReader)
     }()
