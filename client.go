@@ -78,6 +78,7 @@ func forwardClientUp(ctx context.Context, localConn net.Conn, serverAddr string,
         }
 
         err = discardBytes(remoteConn, int64(respContLen))
+        time.Sleep(2 * time.Second)
         if err != nil {
             select {
             case <-ctx.Done():

@@ -12,6 +12,7 @@ var (
     epoch = time.Unix(0, 0)
     zeroTime time.Time
     respCont = []byte("HTTP/1.1 100 Continue\r\n\r\n")
+    //respCont = []byte("0\r\n")
     respDown = []byte("HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\nPragma: no-cache\r\nCache-Control: no-cache, no-store, must-revalidate\r\nExpires: Thu, 01 Jan 1970 00:00:01 GMT\r\n\r\n")
     respContLen = len(respCont)
     respDownLen = len(respDown)
