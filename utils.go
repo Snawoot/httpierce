@@ -3,7 +3,7 @@ package main
 import (
     "io"
     "io/ioutil"
-    "encoding/base64"
+    "encoding/hex"
 )
 
 func discardBytes(r io.Reader, n int64) error {
@@ -12,12 +12,13 @@ func discardBytes(r io.Reader, n int64) error {
 }
 
 type WrappedWire struct {
-    chunked, radix io.WriteCloser
+    chunked io.WriteCloser
+    radix io.Writer
 }
 
 func NewWrappedWire(w io.Writer) *WrappedWire {
     chunked := NewChunkedWriter(w)
-    radix := base64.NewEncoder(base64.URLEncoding, chunked)
+    radix := hex.NewEncoder(chunked)
     return &WrappedWire{chunked, radix}
 }
 
@@ -26,16 +27,7 @@ func (ww *WrappedWire) Write(p []byte) (n int, err error) {
 }
 
 func (ww *WrappedWire) Close() error {
-    var err error
-    err1 := ww.radix.Close()
-    if err1 != nil {
-        err = err1
-    }
-    err2 := ww.chunked.Close()
-    if err2 != nil && err != nil {
-        err = err2
-    }
-    return err
+    return ww.chunked.Close()
 }
 
 type UnwrappedWire struct {
@@ -44,7 +36,7 @@ type UnwrappedWire struct {
 
 func NewUnwrappedWire(r io.Reader) *UnwrappedWire {
     chunked := NewChunkedReader(r)
-    radix := base64.NewDecoder(base64.URLEncoding, chunked)
+    radix := hex.NewDecoder(chunked)
     return &UnwrappedWire{chunked, radix}
 }
 
