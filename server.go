@@ -2,7 +2,7 @@ package main
 
 import (
     "fmt"
-    //"log"
+    "log"
     "net"
     "time"
     "io"
@@ -35,13 +35,45 @@ func handleClientConn(remoteConn net.Conn, dispatcher *SharedConnDispatcher) {
         log.Printf("Bad request from client %s: %v", remoteAddr, err)
         return
     }
+    log.Printf("Client %s: session ID = %s, upload = %s", remoteAddr, sess_id, upload)
 
     localConn, err := dispatcher.ConnectSession(sess_id)
     if err != nil {
         log.Printf("Client %s: session dispatch error: %v", remoteAddr, err)
         return
     }
+
     defer dispatcher.DisconnectSession(sess_id)
+    if upload {
+        forwardServerUp(remoteConn, localConn)
+    } else {
+        forwardServerDown(remoteConn, localConn)
+    }
+}
+
+func forwardServerUp(remoteConn, localConn net.Conn) {
+    chunkedReader := NewChunkedReader(remoteConn)
+    _,err := io.Copy(localConn, chunkedReader)
+    _, err = remoteConn.Write(respUp)
+    if err != nil {
+        log.Printf("Client %s: response write error: %v",
+                   remoteConn.RemoteAddr().String(),
+                   err)
+    }
+}
+
+func forwardServerDown(remoteConn, localConn net.Conn) {
+    _, err := remoteConn.Write(respDown)
+    if err != nil {
+        log.Printf("Client %s: response write error: %v",
+                   remoteConn.RemoteAddr().String(),
+                   err)
+        return
+    }
+    chunkedWriter := NewChunkedWriter(remoteConn)
+    defer chunkedWriter.Close()
+    _, err = io.Copy(chunkedWriter, localConn)
+    log.Printf("Download stopped: %v", err)
 }
 
 func readClientRequest(conn net.Conn) (bool, string, error) {
@@ -75,6 +107,8 @@ func readClientRequest(conn net.Conn) (bool, string, error) {
     bytesRead += needRead
 
     if upload {
+        sessionBytes = sessionBytes[2:]
+    } else {
         sessionBytes = sessionBytes[1:]
     }
 

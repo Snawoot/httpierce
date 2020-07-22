@@ -33,6 +33,7 @@ func serveConn(localConn net.Conn, serverAddr string, dialer net.Dialer) {
     remoteAddr := localConn.RemoteAddr().String()
     log.Printf("Client %s connected", remoteAddr)
     sess_id := uuid.New()
+    log.Printf("Client %s: session ID = %s", remoteAddr, sess_id.String())
     ctx, cancel := context.WithCancel(context.Background())
     var wg sync.WaitGroup
     wg.Add(2)

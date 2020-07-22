@@ -60,10 +60,10 @@ func (e *SharedConnDispatcher) DisconnectSession(sess_id string) {
         entry.refcount--
         if entry.refcount < 1 {
             delete(e.sessions, sess_id)
+            entry.conn.Close()
         }
         e.sessmux.Unlock()
         entry.mux.Unlock()
-        entry.conn.Close()
     } else {
         e.sessmux.Unlock()
     }
